@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SHAHZON Clip League</title>
+<meta name="description" content="SHAHZON Clip League: edit BGMI livestream moments into original shorts, credit SHAHZON, and compete for the monthly prize pool.">
+<meta property="og:title" content="SHAHZON Clip League">
+<meta property="og:description" content="Clip the stream. Climb the board. Free-to-join monthly BGMI clipping league.">
+<meta name="theme-color" content="#D9480F">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/style.css?v=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%23D9480F%22/%3E%3Ctext x=%2216%22 y=%2223%22 font-size=%2218%22 font-family=%22Arial%22 font-weight=%22900%22 text-anchor=%22middle%22 fill=%22white%22%3ESZ%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="#home"><b>SHAHZON</b><span>CLIP LEAGUE</span></a>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#home" data-tab="home">Home</a>
+      <a href="#rules" data-tab="rules">Rules</a>
+      <a href="#guide" data-tab="guide">Clipper Guide</a>
+      <a href="#leaderboard" data-tab="leaderboard">Leaderboard</a>
+      <a href="#submit" data-tab="submit">Join &amp; Submit</a>
+      <a href="#admin" data-tab="admin" id="adminTab" hidden>Admin</a>
+    </nav>
+    <div class="live" id="liveState"><i></i><span>Loading…</span></div>
+  </div>
+</header>
+
+<main>
+<!-- HOME -->
+<div class="view" id="v-home">
+  <section class="hero">
+    <div class="copy">
+      <div class="season-tag"><span class="chip acc" data-bind="season">Season 01</span><span class="chip" id="seasonDates">30-day pilot</span><span class="chip">BGMI</span></div>
+      <h1>Clip the stream.<br><em>Climb the board.</em></h1>
+      <p class="lead">SHAHZON streams BGMI every day. You find the clutch plays, the facecam reactions and the squad chaos, edit them into original shorts on your own account, and credit the channel. The best editors each month take the prize pool.</p>
+      <div class="row">
+        <a class="btn primary" href="#submit">Join the league</a>
+        <a class="btn" href="#rules">Read the rules</a>
+      </div>
+    </div>
+    <div class="podium" aria-label="Monthly prize pool">
+      <div class="eyebrow">Monthly prize pool · <span class="mono" id="poolTotal">₹1,000</span></div>
+      <div class="podium-bars">
+        <div class="pbar p2"><span>2nd</span><b id="pz2">₹300</b></div>
+        <div class="pbar p1"><span>1st</span><b id="pz1">₹500</b></div>
+        <div class="pbar p3"><span>3rd</span><b id="pz3">₹200</b></div>
+      </div>
+      <div class="podium-base"><span>Free to join</span><span>Scored out of 100</span><span>No pay-per-view</span></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="head"><span class="eyebrow">How it works</span><h2>The growth loop</h2></div>
+    <ol class="loop">
+      <li><span class="n">01</span><b>Daily livestream</b><p>SHAHZON streams as usual. Gameplay and reactions become source material.</p><span class="own muted">SHAHZON</span></li>
+      <li><span class="n">02</span><b>Find the moment</b><p>Clutch plays, funny reactions, squad moments, fails and challenges.</p><span class="own muted">Clippers</span></li>
+      <li><span class="n">03</span><b>Edit it original</b><p>Strong opening, captions, pacing, context and your own creative treatment.</p><span class="own muted">Clippers</span></li>
+      <li><span class="n">04</span><b>Publish &amp; credit</b><p>Post on your own account and link or credit the official channel.</p><span class="own muted">Clippers</span></li>
+      <li><span class="n">05</span><b>Review &amp; reward</b><p>Eligible entries are scored. Winners are announced monthly.</p><span class="own muted">SHAHZON / mod</span></li>
+      <li><span class="n">06</span><b>Viewers find SHAHZON</b><p>New viewers discover the channel and come back to the streams.</p><span class="own muted">SHAHZON</span></li>
+    </ol>
+  </section>
+
+  <section class="block">
+    <div class="head"><span class="eyebrow">Season timeline</span><h2 id="phaseTitle">30-day pilot</h2><p class="muted" id="phaseSub">Dates are announced at launch.</p></div>
+    <div class="daybar" aria-hidden="true"><i id="dayFill" style="width:0%"></i></div>
+    <div class="phases" id="phases"></div>
+  </section>
+
+  <section class="block">
+    <div class="head"><span class="eyebrow">Content pillars</span><h2>What we're testing</h2></div>
+    <div class="cards">
+      <div class="card"><h3>Clutch moments</h3><p>Close fights, squad wipes, final-circle moments.</p><span class="q">Does intense gameplay attract new viewers?</span></div>
+      <div class="card"><h3>Personality</h3><p>Facecam reactions, funny mistakes, unexpected moments.</p><span class="q">Does personality create stronger recall?</span></div>
+      <div class="card"><h3>Squad stories</h3><p>Teammate banter, teamwork, chaotic moments.</p><span class="q">Does a story keep people watching?</span></div>
+      <div class="card"><h3>Challenges</h3><p>Self-imposed rules, unusual strategies, mini-goals.</p><span class="q">Does a repeatable series create return viewers?</span></div>
+    </div>
+  </section>
+
+  <section class="block" id="homeBoard">
+    <div class="head row" style="justify-content:space-between"><div class="head"><span class="eyebrow">Current standings</span><h2>Top of the board</h2></div><a class="btn sm" href="#leaderboard">Full leaderboard</a></div>
+    <div id="homeBoardBody"></div>
+  </section>
+</div>
+
+<!-- RULES -->
+<div class="view" id="v-rules" hidden>
+  <section class="block">
+    <div class="head"><span class="eyebrow" data-bind="seasonLong">SHAHZON CLIP LEAGUE · Season 01</span><h2>Official rules</h2>
+    <p class="lead">Pilot duration: 30 days. Rules for a running season are not changed retroactively; future seasons may be revised.</p></div>
+    <div class="two">
+      <div class="panel"><h3>Eligibility &amp; entry</h3><ul class="rules yes">
+        <li>Participation is free.</li>
+        <li>Submit your own account and clip URL and agree to the rules.</li>
+        <li>No subscription, like, comment, membership or purchase is required to enter or win.</li>
+        <li>We collect only what's needed. If you are under 18, follow platform age rules and involve a parent or guardian.</li>
+      </ul><ul class="rules no">
+        <li>No fake views, bots, purchased engagement, spam, impersonation or copied submissions.</li>
+      </ul></div>
+      <div class="panel"><h3>Eligible clip types</h3><ul class="rules yes">
+        <li>BGMI clutch plays and close fights.</li>
+        <li>Funny facecam reactions, unexpected fails and squad moments.</li>
+        <li>Challenges, mini-stories, tips or unusual gameplay situations.</li>
+        <li>Clips must include meaningful editing, context, captions, pacing or storytelling. A raw re-upload of a segment does not qualify.</li>
+      </ul></div>
+      <div class="panel"><h3>Publishing requirements</h3><ul class="rules yes">
+        <li>Publish on your own <span data-bind="platforms">YouTube Shorts, Instagram Reels</span> or another approved platform.</li>
+        <li>Credit SHAHZON clearly and link the official channel where the platform allows.</li>
+        <li>Use only footage you're authorized to use and follow the written permission terms.</li>
+      </ul><ul class="rules no">
+        <li>Don't imply you are the official channel or speak for SHAHZON.</li>
+        <li>No misleading titles, harassment, slurs, personal information, or third-party copyrighted material without rights.</li>
+      </ul></div>
+      <div class="panel"><h3>Disqualification</h3><p class="muted">A clip may be disqualified if it is deleted, private, misleading, copied, artificially inflated or submitted after the deadline.</p>
+        <p class="muted">Submission limit: up to <b class="mono" data-bind="weeklyLimit">3</b> eligible entries per clipper per week.</p>
+        <h3>Tie-break &amp; disputes</h3><ul class="rules">
+        <li>Tie-break 1: higher editing + originality score.</li>
+        <li>Tie-break 2: higher consistency &amp; compliance score.</li>
+        <li>You get 48 hours after provisional results to flag factual scoring errors.</li>
+        <li>If a dispute remains, the organiser makes a documented final decision based on these rules.</li></ul></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="head"><span class="eyebrow">Scoring rubric</span><h2>100 points per clip</h2></div>
+    <div class="rubric">
+      <div class="rub"><div><b>Editing &amp; hook</b><small>Strong first seconds, readable captions, pacing, clean audio/video, satisfying payoff.</small></div><div class="bar"><i style="width:35%"></i><span>35</span></div></div>
+      <div class="rub"><div><b>Reach &amp; retention</b><small>Genuine platform analytics and retention, adjusted for clip age and platform.</small></div><div class="bar"><i style="width:30%"></i><span>30</span></div></div>
+      <div class="rub"><div><b>Originality &amp; story</b><small>Creative framing, context, narrative or commentary beyond a raw repost.</small></div><div class="bar"><i style="width:20%"></i><span>20</span></div></div>
+      <div class="rub"><div><b>Consistency &amp; compliance</b><small>On-time submissions, complete info, accurate credit, rules followed.</small></div><div class="bar"><i style="width:15%"></i><span>15</span></div></div>
+    </div>
+    <p class="note">Reach is only one part of the score. There is no pay-per-view, and unverifiable screenshots are not treated as confirmed evidence. Platforms and account sizes differ, so clips are compared fairly. Your rank uses your highest-scoring eligible clip.</p>
+  </section>
+
+  <section class="block">
+    <div class="head"><span class="eyebrow">Prizes &amp; payout</span><h2>Monthly prize pool</h2></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Place</th><th class="num">Prize</th><th>Basis</th></tr></thead><tbody id="prizeTable"></tbody></table></div>
+    <ul class="rules">
+      <li>The final leaderboard is published with a short explanation of why each winner ranked.</li>
+      <li>Winners are contacted privately to arrange the prize. <b>We will never ask for passwords, OTPs or account access.</b></li>
+      <li>Prize amounts are planned maximums for the pilot and are paid only to eligible winners under these rules.</li>
+      <li>Participation does not guarantee a prize, views, income or any future role.</li>
+    </ul>
+  </section>
+
+  <section class="block">
+    <div class="head"><span class="eyebrow">Safety &amp; rights</span><h2>Platform compliance</h2></div>
+    <div class="two">
+      <ul class="rules">
+        <li>Use of SHAHZON stream footage is limited to the written permission terms, including whether clips may be monetized.</li>
+        <li>Permission to use footage doesn't guarantee monetization. Platforms judge reused or repetitive content separately.</li>
+        <li>Bulk reposting of identical clips is not allowed.</li>
+      </ul>
+      <ul class="rules">
+        <li>Disclose paid or incentivized promotion where the platform or law requires it.</li>
+        <li>YouTube and Instagram are not sponsors of this league and are not involved in running it.</li>
+        <li>This league is a community pilot run by SHAHZON and may be revised for future seasons.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<!-- GUIDE -->
+<div class="view" id="v-guide" hidden>
+  <section class="block">
+    <div class="head"><span class="eyebrow">Clipper guide</span><h2>Anatomy of a winning clip</h2><p class="lead">Start at the most interesting moment. Keep only the context needed. End with a natural pointer to the channel.</p></div>
+    <div class="strip" aria-label="Clip structure">
+      <div class="hook"><span class="t">0–2s</span><b>Hook</b><p>Open on the moment, or set up a clear question. No long intros.</p></div>
+      <div><span class="t">Main</span><b>The moment</b><p>Only the context needed to understand the play or reaction.</p></div>
+      <div><span class="t">Throughout</span><b>Editing</b><p>Readable captions, clean pacing, balanced audio, vertical framing.</p></div>
+      <div><span class="t">Last 2s</span><b>Ending + credit</b><p>Point to SHAHZON's daily streams. Credit and link.</p></div>
+    </div>
+  </section>
+  <section class="block">
+    <div class="two">
+      <div class="panel"><h3>Checklist before you post</h3><ul class="rules yes">
+        <li>Start with the most interesting moment; avoid long intros.</li>
+        <li>Add readable captions and edit for clear pacing.</li>
+        <li>Make the clip understandable without misleading context.</li>
+        <li>Credit SHAHZON and link the official channel where possible.</li>
+        <li>Submit the clip URL and the source stream timestamp.</li>
+        <li>Use only permitted footage and original or authorized assets.</li>
+        <li>Follow the current season rules and deadlines.</li>
+      </ul><ul class="rules no"><li>Never buy views or copy another creator's edit.</li></ul></div>
+      <div class="panel"><h3>Publishing tips</h3><ul class="rules">
+        <li>Test several formats instead of posting many near-identical clips.</li>
+        <li>Use accurate titles and relevant captions. Skip misleading clickbait.</li>
+        <li>Keep the official channel link in your profile or caption.</li>
+        <li>SHAHZON won't repost every clip or endorse every clipper.</li>
+      </ul>
+      <div class="row" id="channelLinks"></div></div>
+    </div>
+  </section>
+</div>
+
+<!-- LEADERBOARD -->
+<div class="view" id="v-leaderboard" hidden>
+  <section class="block">
+    <div class="head"><span class="eyebrow" data-bind="seasonLong">SHAHZON CLIP LEAGUE · Season 01</span><h2>Leaderboard</h2></div>
+    <div class="banner" id="resultsBanner"></div>
+    <div id="boardBody"></div>
+  </section>
+  <section class="block">
+    <div class="head"><span class="eyebrow">Highest-scoring clips</span><h2>Best edits so far</h2></div>
+    <div id="topClips"></div>
+  </section>
+</div>
+
+<!-- SUBMIT -->
+<div class="view" id="v-submit" hidden>
+  <section class="block">
+    <div class="head"><span class="eyebrow">Join &amp; submit</span><h2>Get in the league</h2>
+      <p class="lead">Apply once to get your Clipper ID. Then submit each published clip with its source stream timestamp. An entry is received when you submit, and confirmed eligible after review.</p></div>
+    <div id="submitBody"></div>
+  </section>
+</div>
+
+<!-- ADMIN -->
+<div class="view" id="v-admin" hidden>
+  <section class="block">
+    <div class="row" style="justify-content:space-between;align-items:end"><div class="head"><span class="eyebrow">Organiser only</span><h2>League control room</h2></div><button class="btn sm ghost" type="button" id="logoutBtn">Sign out</button></div>
+    <div class="subnav" id="adminNav"></div>
+    <div id="adminBody"></div>
+  </section>
+</div>
+<!-- LOGIN -->
+<div class="view" id="v-login" hidden>
+  <section class="block" style="max-width:460px">
+    <form class="panel" id="loginForm" novalidate>
+      <span class="eyebrow">Organiser only</span>
+      <h2>Sign in</h2>
+      <label class="f">Organiser password<input type="password" id="lg-pass" autocomplete="current-password"></label>
+      <div id="lg-msg"></div>
+      <div class="row"><button class="btn primary" type="submit">Sign in</button><a class="btn ghost" href="#home">Back to site</a></div>
+    </form>
+  </section>
+</div>
+</main>
+
+<footer><div class="in"><span><b>SHAHZON</b> · Clip Army &amp; Creator Growth System</span><span>Free to enter. Not sponsored by YouTube or Instagram. Never share passwords or OTPs.</span><a href="#login" class="muted">Organiser</a></div></footer>
+<div class="toast" id="toast" hidden></div>
+
+<script src="config.js?v=1"></script>
+<script src="assets/app.js?v=1"></script>
+</body>
+</html>
