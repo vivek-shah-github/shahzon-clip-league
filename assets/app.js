@@ -9,11 +9,18 @@ const CATS=["Clutch","Funny reaction","Squad","Challenge","Other"];
 const STATUSES=["pending","eligible","incomplete","rejected"];
 const BUDGET_LINES=[["prizes","Clipper prizes"],["community","Community event"],["tools","Tools / assets"],["reserve","Reserve"]];
 const CHECKLIST=["Programme rules finalized and checked against current platform policies","Prize pool funded and exact amounts/timeline published","One community space selected","Submission form created and tested","Tracking set up: participants, submissions, scores, leaderboard, expenses, monthly metrics","Clip permission and credit guidelines written","Recruitment announcement published","First 10 participants onboarded","Weekly review time blocked in calendar","Baseline channel metrics recorded before launch","Month-end review and winner announcement date scheduled"];
+/* owner plan (internal tasks) */
 const PHASES=[
   {from:1,to:7,name:"Set up",items:["Rules and one-page clipper guide","Community space, form and tracker","Branding assets and credit instructions","Recruit 10 pilot clippers","Publish prizes, scoring and deadlines"]},
   {from:8,to:14,name:"Test content",items:["A small number of clips each","Test clutch, personality, squad, challenge","Check credit and links work","Share examples of improvements"]},
   {from:15,to:21,name:"Improve",items:["Double down on the best formats","Clear feedback, no promised wins","Check channel visits and subscribers","Stop low-effort repeat submissions"]},
   {from:22,to:30,name:"Close the pilot",items:["Score eligible entries","Provisional results + 48h error window","Final results and prizes","Compare metrics to baseline; decide next season"]}];
+/* visitor timeline (what clippers should do) */
+function pubPhases(){const lim=setting("weeklyLimit");return [
+  {from:1,to:7,name:"Join",items:["Apply and get your Clipper ID","Read the rules and clipper guide","Join the community","Note moments from the daily streams"]},
+  {from:8,to:14,name:"First clips",items:["Publish your first edits","Try clutch, reactions, squad and challenge clips","Credit SHAHZON and link the channel","Submit each clip with its timestamp"]},
+  {from:15,to:21,name:"Level up",items:["Double down on what's working","Up to "+lim+" eligible entries a week","Keep every submitted clip public","Quality over volume"]},
+  {from:22,to:30,name:"Results",items:["Final submissions before the deadline","Provisional results + 48h to flag errors","Final results and prizes","Winners contacted privately"]}]}
 
 /* ---------- state ---------- */
 const S={settings:clone(DEFAULTS),clippers:[],clips:[],expenses:[],metrics:[],contacts:{},inbox:[],checklist:{},payouts:{},myInbox:null};
@@ -22,7 +29,16 @@ function ssGet(k){try{return sessionStorage.getItem(k)||""}catch(e){return ""}}
 function ssSet(k,v){try{v?sessionStorage.setItem(k,v):sessionStorage.removeItem(k)}catch(e){}}
 let adminToken=ssGet("szAdmin");
 let isAdmin=!!adminToken,canSubmitInPage=!!API_URL,submitBlocked=false;
+let preview=isAdmin&&ssGet("szPreview")==="1";
 let adminTab="overview";
+
+/* ---------- audience (owner vs visitor) ---------- */
+function isOwner(){return isAdmin&&!preview}
+function applyAudience(){const b=document.body;b.classList.toggle("admin",isAdmin);b.classList.toggle("owner",isOwner());b.classList.toggle("preview",isAdmin&&preview)}
+function setPreview(on){preview=!!on&&isAdmin;ssSet("szPreview",preview?"1":"");
+  if(preview&&(location.hash==="#admin"||location.hash==="#login"))location.hash="#home";
+  applyAudience();refreshLive();renderPublic();route();toast(preview?"Visitor view: this is what clippers see":"Back to owner view")}
+
 /* ---------- Google Apps Script API ---------- */
 async function api(action,body){
   if(!API_URL){const err=new Error("The site isn't connected to its Google Sheet yet.");err.status=503;throw err}
@@ -60,6 +76,9 @@ function prizes(){const p=setting("prizes");return Array.isArray(p)?p.map(num):D
 function clipperById(id){return S.clippers.find(c=>c.clipperId===id)}
 async function copyText(text,btn){try{await navigator.clipboard.writeText(text);toast("Copied")}catch(e){const pre=btn&&btn.closest(".panel")&&btn.closest(".panel").querySelector("pre");if(pre){const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r)}toast("Copy blocked here. The text is selected; press Ctrl/Cmd+C.")}}
 function newId(prefix){return prefix+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+/* gives every table cell its column name, so tables can stack into cards on phones */
+function labelTables(root){$$("table",root||document).forEach(t=>{const hs=$$("thead th",t).map(th=>th.textContent.trim());
+  $$("tbody tr",t).forEach(tr=>Array.from(tr.children).forEach((td,i)=>td.setAttribute("data-label",hs[i]||"")))})}
 
 /* ---------- scoring ---------- */
 const SK=[["hook","Editing & hook",35],["reach","Reach & retention",30],["orig","Originality",20],["comp","Compliance",15]];
@@ -85,10 +104,19 @@ function cmpClip(a,b){const s=x=>x.scores||{};const d=total(b)-total(a);if(d)ret
 /* ---------- routing ---------- */
 const VIEWS=["home","rules","guide","leaderboard","submit","admin","login"];
 function route(){let h=(location.hash||"#home").slice(1);if(!VIEWS.includes(h))h="home";if(h==="admin"&&!isAdmin)h="login";if(h==="login"&&isAdmin)h="admin";
-  const at=document.getElementById("adminTab");if(at)at.hidden=!isAdmin;
+  if(h==="admin"&&preview){preview=false;ssSet("szPreview","");refreshLive();renderPublic()}
+  applyAudience();
   VIEWS.forEach(v=>{$("#v-"+v).hidden=v!==h});$$("nav.tabs a").forEach(a=>a.setAttribute("aria-current",a.dataset.tab===h?"page":"false"));
+  const cur=$('nav.tabs a[aria-current="page"]');if(cur&&cur.offsetParent){const nav=cur.parentElement;nav.scrollLeft=Math.max(0,cur.offsetLeft-nav.clientWidth/2+cur.clientWidth/2)}
   if(h==="admin")renderAdmin();window.scrollTo(0,0)}
 window.addEventListener("hashchange",route);
+
+/* global clicks: jump to an admin tab, toggle visitor preview, copy share link */
+document.addEventListener("click",e=>{
+  const g=e.target.closest("[data-goto]");if(g&&isAdmin){adminTab=g.dataset.goto;renderAdmin.force=true;if(location.hash==="#admin"){e.preventDefault();renderAdmin()}}
+  if(e.target.closest("[data-preview]")){e.preventDefault();setPreview(true)}
+  if(e.target.closest("[data-exit-preview]")){e.preventDefault();setPreview(false)}
+  const c=e.target.closest("[data-copy-link]");if(c){const pre=c.closest(".panel").querySelector("pre");if(pre)copyText(pre.textContent.trim(),c)}});
 
 /* ---------- public render ---------- */
 function renderPublic(){
@@ -97,24 +125,28 @@ function renderPublic(){
   $$("[data-bind=seasonLong]").forEach(e=>e.textContent="SHAHZON CLIP LEAGUE · "+setting("season"));
   $$("[data-bind=platforms]").forEach(e=>e.textContent=setting("platforms"));
   $$("[data-bind=weeklyLimit]").forEach(e=>e.textContent=setting("weeklyLimit"));
+  $$("[data-bind=seasonDates]").forEach(e=>e.textContent=st.startDate?fmtDate(st.startDate)+" → "+fmtDate(st.endDate||addDays(st.startDate,29)):"30-day pilot");
   $("#pz1").textContent=rs(pz[0]);$("#pz2").textContent=rs(pz[1]);$("#pz3").textContent=rs(pz[2]);
   $("#poolTotal").textContent=rs(pz[0]+pz[1]+pz[2]);
-  $("#seasonDates").textContent=st.startDate?fmtDate(st.startDate)+" → "+fmtDate(st.endDate||addDays(st.startDate,29)):"30-day pilot";
   $("#prizeTable").innerHTML=["1st","2nd","3rd"].map((p,i)=>`<tr><td><b>${p}</b></td><td class="num">${rs(pz[i])}</td><td>${i===0?"Highest eligible score under the published criteria":i===1?"Second-highest eligible score":"Third-highest eligible score"}</td></tr>`).join("");
-  renderPhases();renderBoard();renderGuideLinks();renderSubmit()}
+  renderOwnerHome();renderPhases();renderBoard();renderGuideLinks();renderSubmit();labelTables(document)}
 function addDays(s,n){const d=new Date(s+"T00:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}
-function renderPhases(){const start=setting("startDate");let day=0;
+function renderOwnerHome(){const el=$("#ownerStats");if(!el)return;if(!isOwner()){el.innerHTML="";return}
+  const nc=newInboxCount(),pend=S.clips.filter(c=>c.status==="pending").length,roster=S.clippers.filter(c=>c.active!==false).length;
+  const sp=spentBy(),spent=Object.values(sp).reduce((a,b)=>a+b,0),cap=BUDGET_LINES.reduce((a,[k])=>a+num((setting("budget")||{})[k]),0);
+  el.innerHTML=`<div class="kpi"><b>${nc}</b><span>New in inbox</span></div><div class="kpi"><b>${pend}</b><span>Clips waiting to score</span></div><div class="kpi"><b>${roster}</b><span>Clippers (target 10)</span></div><div class="kpi"><b>${rs(spent)}</b><span>Spent of ${rs(cap)}</span></div>`}
+function renderPhases(){const start=setting("startDate");let day=0;const list=isOwner()?PHASES:pubPhases();
   if(start){day=dayDiff(start,today())+1}
   const title=$("#phaseTitle"),sub=$("#phaseSub");
-  if(!start){title.textContent="30-day pilot";sub.textContent="Dates are announced at launch."}
+  if(!start){title.textContent="30-day pilot";sub.textContent=isOwner()?"Set the start date in Settings to track the pilot day by day.":"Dates are announced at launch."}
   else if(day<1){title.textContent="Starts in "+(1-day)+" day"+(1-day===1?"":"s");sub.textContent="Season begins "+fmtDate(start)+"."}
-  else if(day>30){title.textContent="Pilot complete";sub.textContent="Day 30 passed on "+fmtDate(addDays(start,29))+"."}
-  else{const ph=PHASES.find(p=>day>=p.from&&day<=p.to);title.textContent="Day "+day+" of 30 · "+ph.name;sub.textContent=(30-day)+" day"+(30-day===1?"":"s")+" left in the pilot."}
+  else if(day>30){title.textContent=isOwner()?"Pilot complete":"Season complete";sub.textContent="Day 30 passed on "+fmtDate(addDays(start,29))+"."}
+  else{const ph=list.find(p=>day>=p.from&&day<=p.to);title.textContent="Day "+day+" of 30 · "+ph.name;sub.textContent=(30-day)+" day"+(30-day===1?"":"s")+" left in the "+(isOwner()?"pilot.":"season.")}
   $("#dayFill").style.width=Math.max(0,Math.min(100,(day/30)*100))+"%";
-  $("#phases").innerHTML=PHASES.map(p=>{const cls=start&&day>=p.from&&day<=p.to?"now":(start&&day>p.to?"done":"");
+  $("#phases").innerHTML=list.map(p=>{const cls=start&&day>=p.from&&day<=p.to?"now":(start&&day>p.to?"done":"");
     return `<div class="phase ${cls}"><span class="d">Days ${p.from}–${p.to}${cls==="now"?" · now":""}</span><h3>${esc(p.name)}</h3><ul>${p.items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`}).join("")}
 function boardTable(rows,limit){
-  if(!rows.length)return `<div class="tbl-wrap"><div class="empty"><b>No eligible clips yet</b><span>Standings appear here once the first clips are reviewed and scored.</span><a class="btn sm primary" href="#submit">Submit a clip</a></div></div>`;
+  if(!rows.length)return `<div class="tbl-wrap"><div class="empty"><b>No eligible clips yet</b><span>${isOwner()?"Score clips in the control room and standings show up here.":"Standings appear here once the first clips are reviewed and scored."}</span>${isOwner()?`<a class="btn sm primary" href="#admin" data-goto="clips">Score clips</a>`:`<a class="btn sm primary" href="#submit">Submit a clip</a>`}</div></div>`;
   const r=limit?rows.slice(0,limit):rows;
   return `<div class="tbl-wrap"><table><thead><tr><th>Rank</th><th>Clipper</th><th class="num">Eligible clips</th><th class="num">Avg score</th><th class="num">Best clip</th><th class="num">Prize</th></tr></thead><tbody>${
     r.map(x=>`<tr><td class="rank ${x.rank<=3&&x.best?"r"+x.rank:""}">${x.best?x.rank:"–"}</td><td><div class="handle">${esc(x.handle)}</div><div class="sub">${esc(x.clipperId)}${x.platform?" · "+esc(x.platform):""}</div></td><td class="num">${x.eligible}</td><td class="num">${x.scoredCount?x.avg.toFixed(1):"—"}</td><td class="num"><b>${x.best?x.bestScore:"—"}</b>${x.best?" / 100":""}</td><td class="num">${x.prize?rs(x.prize):"—"}</td></tr>`).join("")}</tbody></table></div>`}
@@ -134,8 +166,27 @@ function renderGuideLinks(){const ch=safeUrl(setting("channelUrl")),cm=safeUrl(s
   $("#channelLinks").innerHTML=(ch?`<a class="btn sm primary" href="${esc(ch)}" target="_blank" rel="noopener noreferrer">Official SHAHZON channel ↗</a>`:"")+(cm?`<a class="btn sm" href="${esc(cm)}" target="_blank" rel="noopener noreferrer">${esc(setting("communityName")||"Community")} ↗</a>`:"")}
 
 /* ---------- submit ---------- */
+function ownerSubmit(){
+  const isNew=e=>(e.status||"new")==="new",apps=S.inbox.filter(e=>e.type==="apply"),clips=S.inbox.filter(e=>e.type==="clip");
+  const pageUrl=location.href.split("#")[0]+"#submit";
+  const st=(ok,yes,no)=>`<span class="chip ${ok?"ok":"bad"}">${ok?yes:no}</span>`;
+  const ap=safeUrl(setting("applyFormUrl")),su=safeUrl(setting("submitFormUrl")),cm=safeUrl(setting("communityUrl"));
+  const rows=[["In-page forms",st(canSubmitInPage,"Connected","Not connected"),"Apply and Submit forms on this page, saved to your Google Sheet"],
+    ["Application Google Form",st(!!ap,"Set","Not set"),ap?link(ap):"Optional backup form"],
+    ["Clip submission Google Form",st(!!su,"Set","Not set"),su?link(su):"Optional backup form"],
+    ["Community",st(!!cm,"Set","Not set"),cm?link(cm,setting("communityName")||"Community"):"Where you share Clipper IDs and updates"]];
+  return `<div class="kpis">
+    <div class="kpi"><b>${apps.filter(isNew).length}</b><span>New applications</span></div>
+    <div class="kpi"><b>${clips.filter(isNew).length}</b><span>New clip submissions</span></div>
+    <div class="kpi"><b>${S.inbox.filter(e=>!isNew(e)).length}</b><span>Processed entries</span></div>
+    <div class="kpi"><b>${S.clippers.filter(c=>c.active!==false).length}</b><span>Clippers on roster</span></div></div>
+  <div class="row"><a class="btn primary" href="#admin" data-goto="inbox">Review inbox</a><button class="btn" type="button" data-preview>See the entry forms</button></div>
+  <div class="panel"><div class="row" style="justify-content:space-between"><h3>Share the entry page</h3><button class="btn sm" type="button" data-copy-link>Copy link</button></div><p class="muted">Post this link in your community and stream description. Clippers apply and submit from here.</p><pre class="tpl linkbox">${esc(pageUrl)}</pre></div>
+  <div class="panel"><div class="row" style="justify-content:space-between"><h3>Entry channels</h3><a class="btn sm" href="#admin" data-goto="settings">Edit in Settings</a></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Channel</th><th>Status</th><th>Details</th></tr></thead><tbody>${rows.map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join("")}</tbody></table></div></div>`}
 function renderSubmit(){
   const body=$("#submitBody");if(!body)return;
+  if(isOwner()){body.innerHTML=ownerSubmit();return}
   const applyU=safeUrl(setting("applyFormUrl")),subU=safeUrl(setting("submitFormUrl")),cm=safeUrl(setting("communityUrl"));
   const formsLinks=(applyU||subU||cm)?`<div class="row">${applyU?`<a class="btn primary" href="${esc(applyU)}" target="_blank" rel="noopener noreferrer">Apply via form ↗</a>`:""}${subU?`<a class="btn" href="${esc(subU)}" target="_blank" rel="noopener noreferrer">Submit a clip via form ↗</a>`:""}${cm?`<a class="btn ghost" href="${esc(cm)}" target="_blank" rel="noopener noreferrer">Join ${esc(setting("communityName")||"the community")} ↗</a>`:""}</div>`:"";
   if(!(canSubmitInPage&&!submitBlocked)){
@@ -148,17 +199,17 @@ function renderSubmit(){
      <label class="f">Display name / handle<input id="ap-handle" required maxlength="60" placeholder="@yourhandle"></label>
      <label class="f">Platform<select id="ap-platform">${platformOpts()}</select></label>
      <label class="f wide">Contact for league updates<input id="ap-contact" required maxlength="120" placeholder="Discord, Instagram or Telegram username"></label>
-     <label class="f wide">Your channel or profile URL<input id="ap-profile" maxlength="300" placeholder="https://…"></label>
+     <label class="f wide">Your channel or profile URL<input id="ap-profile" maxlength="300" placeholder="https://…" inputmode="url"></label>
     </div>
     <label class="check"><input type="checkbox" id="ap-rules">I've read the rules and will only use permitted footage.</label>
     <label class="check"><input type="checkbox" id="ap-fair">I won't buy views or engagement, or copy anyone's edit.</label>
     <div id="ap-msg">${flash.ap}</div><div class="row"><button class="btn primary" type="submit">Send application</button></div></form>
    <form class="panel" id="clipForm" novalidate><h3>2 · Submit a clip</h3>
     <div class="grid-form">
-     <label class="f">Clipper ID<input id="cl-id" required maxlength="10" placeholder="SZ001" class="mono"></label>
+     <label class="f">Clipper ID<input id="cl-id" required maxlength="10" placeholder="SZ001" class="mono" autocapitalize="characters"></label>
      <label class="f">Platform<select id="cl-platform">${platformOpts()}</select></label>
-     <label class="f wide">Published clip URL<input id="cl-url" required maxlength="300" placeholder="https://youtube.com/shorts/…"></label>
-     <label class="f wide">Source stream URL<input id="cl-src" required maxlength="300" placeholder="https://youtube.com/live/…"></label>
+     <label class="f wide">Published clip URL<input id="cl-url" required maxlength="300" placeholder="https://youtube.com/shorts/…" inputmode="url"></label>
+     <label class="f wide">Source stream URL<input id="cl-src" required maxlength="300" placeholder="https://youtube.com/live/…" inputmode="url"></label>
      <label class="f">Timestamp in stream<input id="cl-ts" required maxlength="12" placeholder="1:23:45" class="mono"></label>
      <label class="f">Category<select id="cl-cat">${CATS.map(c=>`<option>${c}</option>`).join("")}</select></label>
      <label class="f">Publish date<input id="cl-date" type="date" required value="${today()}"></label>
@@ -202,9 +253,10 @@ function newInboxCount(){return S.inbox.filter(e=>(e.status||"new")==="new").len
 function renderAdmin(){if(!isAdmin)return;
   const nc=newInboxCount(),pend=S.clips.filter(c=>c.status==="pending").length;
   $("#adminNav").innerHTML=ATABS.map(([k,l])=>`<button type="button" data-at="${k}" aria-pressed="${k===adminTab}">${l}${k==="inbox"&&nc?`<span class="count">${nc}</span>`:""}${k==="clips"&&pend?`<span class="count">${pend}</span>`:""}</button>`).join("");
+  const sel=$('#adminNav button[aria-pressed="true"]');if(sel){const n=sel.parentElement;if(n.scrollWidth>n.clientWidth)n.scrollLeft=Math.max(0,sel.offsetLeft-n.clientWidth/2+sel.clientWidth/2)}
   const a=document.activeElement;if(a&&$("#adminBody").contains(a)&&a.matches("input,select,textarea")&&!renderAdmin.force)return;renderAdmin.force=false;
   const fn={overview:aOverview,inbox:aInbox,clippers:aClippers,clips:aClips,budget:aBudget,metrics:aMetrics,templates:aTemplates,checklist:aChecklist,settings:aSettings}[adminTab];
-  $("#adminBody").innerHTML=fn();bindAdmin()}
+  $("#adminBody").innerHTML=fn();bindAdmin();labelTables($("#adminBody"))}
 $("#adminNav").addEventListener("click",e=>{const b=e.target.closest("button[data-at]");if(!b)return;adminTab=b.dataset.at;renderAdmin.force=true;renderAdmin()});
 function spentBy(){const o={prizes:0,community:0,tools:0,reserve:0};S.expenses.forEach(x=>{o[x.category]=(o[x.category]||0)+num(x.amount)});return o}
 function aOverview(){
@@ -222,7 +274,7 @@ function aOverview(){
     <div class="kpi"><b>${done}/${CHECKLIST.length}</b><span>Launch checklist done</span></div></div>
   ${over.size?`<div class="rule-hit"><b>${over.size} eligible clip${over.size>1?"s are":" is"} over the weekly limit</b><span>They're left out of the leaderboard. Review them in Clips &amp; scoring.</span></div>`:""}
   <div class="panel"><div class="row" style="justify-content:space-between"><h3>Results &amp; payouts</h3>
-    <label class="f" style="min-width:200px">Results status<select id="resStatus">${["live","provisional","final"].map(s=>`<option value="${s}" ${setting("resultsStatus")===s?"selected":""}>${s[0].toUpperCase()+s.slice(1)}</option>`).join("")}</select></label></div>
+    <label class="f" style="min-width:min(200px,100%)">Results status<select id="resStatus">${["live","provisional","final"].map(s=>`<option value="${s}" ${setting("resultsStatus")===s?"selected":""}>${s[0].toUpperCase()+s.slice(1)}</option>`).join("")}</select></label></div>
     ${top.length?`<div class="tbl-wrap"><table><thead><tr><th>Rank</th><th>Clipper</th><th>Contact (private)</th><th class="num">Score</th><th class="num">Prize</th><th>Paid on</th><th>Payment ref</th><th></th></tr></thead><tbody>${top.map(r=>{const p=S.payouts[r.clipperId]||{};const c=S.contacts[r.clipperId]||{};
       return `<tr data-pay="${esc(r.clipperId)}"><td class="rank r${r.rank}">${r.rank}</td><td><div class="handle">${esc(r.handle)}</div><div class="sub">${esc(r.clipperId)}</div></td><td>${esc(c.contact||"—")}</td><td class="num">${r.bestScore}</td><td class="num">${rs(r.prize)}</td><td><input type="date" class="pay-date" value="${esc(p.date||"")}"></td><td><input class="pay-ref" maxlength="80" value="${esc(p.ref||"")}" placeholder="UPI ref"></td><td><button class="btn sm" data-act="savepay" type="button">${p.paid?"Update":"Mark paid"}</button>${p.paid?' <span class="chip ok">Paid</span>':""}</td></tr>`}).join("")}</tbody></table></div>`:`<p class="muted">No scored eligible clips yet. Winners appear here once clips are scored.</p>`}
     <p class="note">Contact winners privately. Never ask for passwords, OTPs or account access. Record the date, amount and confirmation of each payout.</p></div>
@@ -260,8 +312,8 @@ function aClips(){const over=weeklyOverflow();
   return `<form class="panel" id="addClip"><h3>Add clip</h3><div class="grid-form">
    <label class="f">Clipper<select id="ak-cid">${S.clippers.map(c=>`<option value="${esc(c.clipperId)}">${esc(c.clipperId)} · ${esc(c.handle)}</option>`).join("")||'<option value="">Add a clipper first</option>'}</select></label>
    <label class="f">Platform<select id="ak-platform">${platformOpts()}</select></label>
-   <label class="f wide">Clip URL<input id="ak-url" maxlength="300" placeholder="https://"></label>
-   <label class="f">Source stream URL<input id="ak-src" maxlength="300" placeholder="https://"></label>
+   <label class="f wide">Clip URL<input id="ak-url" maxlength="300" placeholder="https://" inputmode="url"></label>
+   <label class="f">Source stream URL<input id="ak-src" maxlength="300" placeholder="https://" inputmode="url"></label>
    <label class="f">Timestamp<input id="ak-ts" maxlength="12" class="mono" placeholder="1:23:45"></label>
    <label class="f">Category<select id="ak-cat">${CATS.map(c=>`<option>${c}</option>`).join("")}</select></label>
    <label class="f">Publish date<input id="ak-date" type="date" value="${today()}"></label></div>
@@ -270,7 +322,7 @@ function aClips(){const over=weeklyOverflow();
   ${list.length?`<div class="tbl-wrap"><table><thead><tr><th>Clip</th><th>Status</th>${SK.map(([k,l,m])=>`<th class="num" title="${l}">${l.split(" ")[0]} /${m}</th>`).join("")}<th class="num">Total</th><th>Public note</th><th></th></tr></thead><tbody>${list.map(c=>{const s=c.scores||{};const p=clipperById(c.clipperId)||{};
     return `<tr data-clip="${esc(c.id)}"><td><div class="handle">${esc(p.handle||c.clipperId)} <span class="sub">${esc(c.clipperId)}</span></div><div class="sub">${esc(c.platform)} · ${esc(c.category)} · ${esc(fmtDate(c.publishDate))} · @${esc(c.timestamp||"")}</div>${link(c.url,"Clip ↗")} · ${link(c.sourceUrl,"Source ↗")}${over.has(c.id)?' <span class="chip bad">Over weekly limit</span>':""}</td>
     <td><select class="k-status">${STATUSES.map(x=>`<option ${c.status===x?"selected":""}>${x}</option>`).join("")}</select></td>
-    ${SK.map(([k,,m])=>`<td class="num scorecell"><input type="number" min="0" max="${m}" step="1" data-k="${k}" value="${s[k]===undefined||s[k]===null?"":esc(s[k])}"></td>`).join("")}
+    ${SK.map(([k,,m])=>`<td class="num scorecell"><input type="number" inputmode="numeric" min="0" max="${m}" step="1" data-k="${k}" value="${s[k]===undefined||s[k]===null?"":esc(s[k])}"></td>`).join("")}
     <td class="num"><b class="k-total">${scored(c)?total(c):"—"}</b></td>
     <td><input class="k-note" maxlength="140" value="${esc(c.publicNote||"")}" placeholder="Why it ranked"></td>
     <td><div class="row" style="flex-wrap:nowrap"><button class="btn sm primary" type="button" data-act="saveClip">Save</button><button class="btn sm danger" type="button" data-act="delClip">Delete</button></div></td></tr>`}).join("")}</tbody></table></div>`:`<div class="tbl-wrap"><div class="empty"><b>No clips here</b><span>Accept clips from the Inbox or add them from your form responses.</span></div></div>`}
@@ -283,7 +335,7 @@ function aBudget(){const b=Object.assign({},DEFAULTS.budget,setting("budget")||{
   <form class="panel" id="addExpense"><h3>Log expense</h3><div class="grid-form">
    <label class="f">Date<input id="ae-date" type="date" value="${today()}"></label>
    <label class="f">Category<select id="ae-cat">${BUDGET_LINES.map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select></label>
-   <label class="f">Amount (₹)<input id="ae-amt" type="number" min="0" step="1" class="mono"></label>
+   <label class="f">Amount (₹)<input id="ae-amt" type="number" inputmode="numeric" min="0" step="1" class="mono"></label>
    <label class="f">Purpose<input id="ae-purpose" maxlength="120"></label>
    <label class="f">Receipt / reference<input id="ae-ref" maxlength="80"></label>
    <label class="f">Approved by<input id="ae-by" maxlength="60" value="SHAHZON"></label></div>
@@ -293,7 +345,7 @@ const MF=[["startSubs","Start subscribers"],["endSubs","End subscribers"],["shor
 function aMetrics(){const ms=S.metrics.slice().sort((a,b)=>(b.month||"").localeCompare(a.month||""));const m0=ms[0];
   return `<form class="panel" id="addMetric"><h3>Record a month</h3><div class="grid-form">
    <label class="f">Month<input id="am-month" type="month" value="${today().slice(0,7)}"></label>
-   ${MF.map(([k,l])=>`<label class="f">${l}<input id="am-${k}" type="number" min="0" step="1" class="mono"></label>`).join("")}</div>
+   ${MF.map(([k,l])=>`<label class="f">${l}<input id="am-${k}" type="number" inputmode="numeric" min="0" step="1" class="mono"></label>`).join("")}</div>
    <div class="row"><button class="btn primary" type="submit">Save month</button></div></form>
   ${ms.length?`<div class="tbl-wrap"><table><thead><tr><th>Month</th>${MF.map(([,l])=>`<th class="num">${l}</th>`).join("")}<th class="num">Spend</th><th></th></tr></thead><tbody>${ms.map(m=>`<tr data-met="${esc(m.id)}"><td class="mono"><b>${esc(m.month)}</b></td>${MF.map(([k])=>`<td class="num">${m[k]===""||m[k]==null?"—":num(m[k]).toLocaleString("en-IN")}</td>`).join("")}<td class="num">${rs(spendFor(m.month))}</td><td><button class="btn sm danger" type="button" data-act="delMet">Delete</button></td></tr>`).join("")}</tbody></table></div>`:`<p class="muted">Record your baseline before launch, then the month-end numbers.</p>`}
   <div class="panel"><h3>Decision rules</h3>${decisions(m0)}</div>`}
@@ -334,13 +386,13 @@ function aSettings(){const st=S.settings,b=Object.assign({},DEFAULTS.budget,sett
   const f=(id,l,v,t,extra)=>`<label class="f">${l}<input id="${id}" type="${t||"text"}" value="${esc(v==null?"":v)}" ${extra||""}></label>`;
   return `<form class="panel" id="settingsForm"><h3>Season</h3><div class="grid-form">
    ${f("s-season","Season name",setting("season"),"text",'maxlength="40"')}${f("s-start","Start date",st.startDate,"date")}${f("s-end","End date",st.endDate,"date")}${f("s-results","Results announcement date",st.resultsDate,"date")}
-   ${f("s-weekly","Eligible entries per clipper per week",setting("weeklyLimit"),"number",'min="1" max="20"')}${f("s-platforms","Approved platforms (comma separated)",setting("platforms"),"text",'maxlength="160"')}</div>
+   ${f("s-weekly","Eligible entries per clipper per week",setting("weeklyLimit"),"number",'min="1" max="20" inputmode="numeric"')}${f("s-platforms","Approved platforms (comma separated)",setting("platforms"),"text",'maxlength="160"')}</div>
    <h3>Links</h3><div class="grid-form">
    ${f("s-channel","Official channel URL",st.channelUrl,"url")}${f("s-community","Community URL (Discord / WhatsApp / Telegram)",st.communityUrl,"url")}${f("s-communityName","Community name",st.communityName)}
    ${f("s-apply","Application Google Form URL",st.applyFormUrl,"url")}${f("s-submit","Clip submission Google Form URL",st.submitFormUrl,"url")}${f("s-contact","Official contact (for winners)",st.contact,"text",'maxlength="120"')}</div>
    <h3>Prizes &amp; budget (₹)</h3><div class="grid-form">
-   ${f("s-p1","1st prize",pz[0],"number",'min="0"')}${f("s-p2","2nd prize",pz[1],"number",'min="0"')}${f("s-p3","3rd prize",pz[2],"number",'min="0"')}
-   ${BUDGET_LINES.map(([k,l])=>f("s-b-"+k,l+" cap",b[k],"number",'min="0"')).join("")}</div>
+   ${f("s-p1","1st prize",pz[0],"number",'min="0" inputmode="numeric"')}${f("s-p2","2nd prize",pz[1],"number",'min="0" inputmode="numeric"')}${f("s-p3","3rd prize",pz[2],"number",'min="0" inputmode="numeric"')}
+   ${BUDGET_LINES.map(([k,l])=>f("s-b-"+k,l+" cap",b[k],"number",'min="0" inputmode="numeric"')).join("")}</div>
    <p class="note">Don't retroactively change rules or prizes for a running season. Publish exact dates, scoring and payout timeline before launch, and only announce prizes you can fund.</p>
    <div id="s-msg"></div><div class="row"><button class="btn primary" type="submit">Save settings</button></div></form>`}
 
@@ -390,7 +442,10 @@ function processEntry(eid,act){const src=S.inbox.find(x=>x.id===eid);if(!src)ret
     delete e._doc;await put("inbox",eid,e);toast(act==="accept"?(e.assignedId?"Accepted as "+e.assignedId:"Clip added as pending"):"Rejected");renderAdmin.force=true})}
 
 /* ---------- data loading ---------- */
-function setLive(on,text){const el=$("#liveState");el.classList.toggle("on",on);el.querySelector("span").textContent=text}
+let liveOn=false;
+function liveLabel(){return isAdmin?(preview?"Visitor view":"Organiser"):"Live"}
+function setLive(on,text){liveOn=on;const el=$("#liveState");el.classList.toggle("on",on);el.querySelector("span").textContent=text}
+function refreshLive(){if(liveOn)setLive(true,liveLabel())}
 function renderAll(){renderPublic();if(isAdmin&&!$("#v-admin").hidden)renderAdmin()}
 let rq=0;function schedule(){if(rq)return;rq=requestAnimationFrame(()=>{rq=0;renderAll()})}
 async function load(){
@@ -405,22 +460,22 @@ async function load(){
     }else{
       const j=await api("public_state");S.settings=Object.assign(clone(DEFAULTS),j.settings||{});S.clippers=j.clippers||[];S.clips=j.clips||[];
     }
-    setLive(true,isAdmin?"Organiser":"Live");
+    setLive(true,liveLabel());
   }catch(e){
     if(e.status===401&&isAdmin){signOut();return load()}
     setLive(false,API_URL?"Offline":"Not connected")}
   schedule()}
 async function loadMine(){if(!API_URL)return;try{const j=await api("my_entries",{token:TOKEN});S.myInbox={entries:j.entries||[]};schedule()}catch(e){}}
-function signOut(){adminToken="";ssSet("szAdmin","");isAdmin=false;S.inbox=[];S.contacts={};S.expenses=[];S.metrics=[];if(location.hash==="#admin")location.hash="#home";route()}
+function signOut(){adminToken="";ssSet("szAdmin","");ssSet("szPreview","");isAdmin=false;preview=false;S.inbox=[];S.contacts={};S.expenses=[];S.metrics=[];applyAudience();if(location.hash==="#admin")location.hash="#home";renderPublic();route()}
 $("#logoutBtn").addEventListener("click",()=>{signOut();load();toast("Signed out")});
 $("#loginForm").addEventListener("submit",async ev=>{ev.preventDefault();const m=$("#lg-msg"),p=$("#lg-pass").value;
   if(!p){m.innerHTML=`<p class="msg bad">Enter the organiser password.</p>`;return}
   m.innerHTML=`<p class="msg info">Signing in…</p>`;
-  try{const j=await api("login",{password:p});adminToken=j.adminToken;ssSet("szAdmin",adminToken);isAdmin=true;$("#lg-pass").value="";m.innerHTML="";await load();location.hash="#admin";route()}
+  try{const j=await api("login",{password:p});adminToken=j.adminToken;ssSet("szAdmin",adminToken);isAdmin=true;preview=false;ssSet("szPreview","");$("#lg-pass").value="";m.innerHTML="";applyAudience();await load();location.hash="#admin";route()}
   catch(e){m.innerHTML=`<p class="msg bad">${esc(e.message)}</p>`}});
 let pollT=0;
 function boot(){
-  renderPublic();route();load().then(()=>route());loadMine();
+  applyAudience();renderPublic();route();load().then(()=>route());loadMine();
   pollT=setInterval(()=>{if(document.visibilityState==="visible"&&!busy&&API_URL)load()},30000)}
 boot();
 })();

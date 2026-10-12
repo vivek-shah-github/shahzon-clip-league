@@ -11,31 +11,34 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=1">
+<link rel="stylesheet" href="assets/style.css?v=2">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%23D9480F%22/%3E%3Ctext x=%2216%22 y=%2223%22 font-size=%2218%22 font-family=%22Arial%22 font-weight=%22900%22 text-anchor=%22middle%22 fill=%22white%22%3ESZ%3C/text%3E%3C/svg%3E">
 </head>
 <body>
+<script>try{if(sessionStorage.getItem("szAdmin")){document.body.classList.add("admin");document.body.classList.add(sessionStorage.getItem("szPreview")==="1"?"preview":"owner")}}catch(e){}</script>
 <header class="top">
   <div class="top-in">
-    <a class="brand" href="#home"><b>SHAHZON</b><span>CLIP LEAGUE</span></a>
+    <a class="brand" href="#home"><b>SHAHZON</b><span><span data-aud="public">CLIP LEAGUE</span><span data-aud="owner">OWNER</span></span></a>
     <nav class="tabs" aria-label="Sections">
       <a href="#home" data-tab="home">Home</a>
       <a href="#rules" data-tab="rules">Rules</a>
       <a href="#guide" data-tab="guide">Clipper Guide</a>
       <a href="#leaderboard" data-tab="leaderboard">Leaderboard</a>
-      <a href="#submit" data-tab="submit">Join &amp; Submit</a>
-      <a href="#admin" data-tab="admin" id="adminTab" hidden>Admin</a>
+      <a href="#submit" data-tab="submit"><span data-aud="public">Join &amp; Submit</span><span data-aud="owner">Entries</span></a>
+      <a href="#admin" data-tab="admin" id="adminTab" data-aud="owner">Control room</a>
     </nav>
+    <button class="btn sm ghost viewas" type="button" data-preview data-aud="owner">Visitor view</button>
     <div class="live" id="liveState"><i></i><span>Loading…</span></div>
   </div>
+  <div class="preview-bar" data-aud="preview"><div class="in"><span>You're previewing the public site exactly as clippers see it. Forms here are live.</span><button class="btn sm" type="button" data-exit-preview>Back to owner view</button></div></div>
 </header>
 
 <main>
 <!-- HOME -->
 <div class="view" id="v-home">
   <section class="hero">
-    <div class="copy">
-      <div class="season-tag"><span class="chip acc" data-bind="season">Season 01</span><span class="chip" id="seasonDates">30-day pilot</span><span class="chip">BGMI</span></div>
+    <div class="copy" data-aud="public">
+      <div class="season-tag"><span class="chip acc" data-bind="season">Season 01</span><span class="chip" data-bind="seasonDates">30-day pilot</span><span class="chip">BGMI</span></div>
       <h1>Clip the stream.<br><em>Climb the board.</em></h1>
       <p class="lead">SHAHZON streams BGMI every day. You find the clutch plays, the facecam reactions and the squad chaos, edit them into original shorts on your own account, and credit the channel. The best editors each month take the prize pool.</p>
       <div class="row">
@@ -43,8 +46,19 @@
         <a class="btn" href="#rules">Read the rules</a>
       </div>
     </div>
+    <div class="copy" data-aud="owner">
+      <div class="season-tag"><span class="chip acc" data-bind="season">Season 01</span><span class="chip" data-bind="seasonDates">30-day pilot</span><span class="chip">Owner view</span></div>
+      <h1>Run the league.<br><em>Grow the channel.</em></h1>
+      <p class="lead">Check new entries, score a shortlist and keep the board fresh. Visitors see the clipper-facing version of every page.</p>
+      <div class="kpis owner-kpis" id="ownerStats"></div>
+      <div class="row">
+        <a class="btn primary" href="#admin" data-goto="inbox">Review inbox</a>
+        <a class="btn" href="#admin" data-goto="clips">Score clips</a>
+        <button class="btn ghost" type="button" data-preview>Visitor view</button>
+      </div>
+    </div>
     <div class="podium" aria-label="Monthly prize pool">
-      <div class="eyebrow">Monthly prize pool · <span class="mono" id="poolTotal">₹1,000</span></div>
+      <div class="eyebrow"><span data-aud="public">Monthly prize pool</span><span data-aud="owner">Prize pool you've committed</span> · <span class="mono" id="poolTotal">₹1,000</span></div>
       <div class="podium-bars">
         <div class="pbar p2"><span>2nd</span><b id="pz2">₹300</b></div>
         <div class="pbar p1"><span>1st</span><b id="pz1">₹500</b></div>
@@ -54,8 +68,22 @@
     </div>
   </section>
 
-  <section class="block">
-    <div class="head"><span class="eyebrow">How it works</span><h2>The growth loop</h2></div>
+  <!-- how it works: visitors -->
+  <section class="block" data-aud="public">
+    <div class="head"><span class="eyebrow">How it works</span><h2>Six steps to the board</h2></div>
+    <ol class="loop">
+      <li><span class="n">01</span><b>Apply</b><p>Send one application and get your Clipper ID (like SZ001).</p></li>
+      <li><span class="n">02</span><b>Watch the stream</b><p>Catch SHAHZON's daily BGMI streams and note the timestamps worth clipping.</p></li>
+      <li><span class="n">03</span><b>Edit it original</b><p>Strong opening, captions, pacing and context. A raw re-upload doesn't count.</p></li>
+      <li><span class="n">04</span><b>Publish &amp; credit</b><p>Post on your own account. Credit SHAHZON and link the official channel.</p></li>
+      <li><span class="n">05</span><b>Submit</b><p>Send the clip link with the source stream timestamp.</p></li>
+      <li><span class="n">06</span><b>Get scored</b><p>Eligible clips are scored out of 100. The top 3 win each month.</p></li>
+    </ol>
+  </section>
+
+  <!-- growth loop: owner -->
+  <section class="block" data-aud="owner">
+    <div class="head"><span class="eyebrow">Your growth loop</span><h2>The growth loop</h2></div>
     <ol class="loop">
       <li><span class="n">01</span><b>Daily livestream</b><p>SHAHZON streams as usual. Gameplay and reactions become source material.</p><span class="own muted">SHAHZON</span></li>
       <li><span class="n">02</span><b>Find the moment</b><p>Clutch plays, funny reactions, squad moments, fails and challenges.</p><span class="own muted">Clippers</span></li>
@@ -67,29 +95,30 @@
   </section>
 
   <section class="block">
-    <div class="head"><span class="eyebrow">Season timeline</span><h2 id="phaseTitle">30-day pilot</h2><p class="muted" id="phaseSub">Dates are announced at launch.</p></div>
+    <div class="head"><span class="eyebrow"><span data-aud="public">Season timeline</span><span data-aud="owner">Your pilot plan</span></span><h2 id="phaseTitle">30-day pilot</h2><p class="muted" id="phaseSub">Dates are announced at launch.</p></div>
     <div class="daybar" aria-hidden="true"><i id="dayFill" style="width:0%"></i></div>
     <div class="phases" id="phases"></div>
   </section>
 
   <section class="block">
-    <div class="head"><span class="eyebrow">Content pillars</span><h2>What we're testing</h2></div>
+    <div class="head"><span class="eyebrow">Content pillars</span><h2><span data-aud="public">What to clip</span><span data-aud="owner">What we're testing</span></h2></div>
     <div class="cards">
-      <div class="card"><h3>Clutch moments</h3><p>Close fights, squad wipes, final-circle moments.</p><span class="q">Does intense gameplay attract new viewers?</span></div>
-      <div class="card"><h3>Personality</h3><p>Facecam reactions, funny mistakes, unexpected moments.</p><span class="q">Does personality create stronger recall?</span></div>
-      <div class="card"><h3>Squad stories</h3><p>Teammate banter, teamwork, chaotic moments.</p><span class="q">Does a story keep people watching?</span></div>
-      <div class="card"><h3>Challenges</h3><p>Self-imposed rules, unusual strategies, mini-goals.</p><span class="q">Does a repeatable series create return viewers?</span></div>
+      <div class="card"><h3>Clutch moments</h3><p>Close fights, squad wipes, final-circle moments.</p><span class="q" data-aud="owner">Does intense gameplay attract new viewers?</span></div>
+      <div class="card"><h3>Personality</h3><p>Facecam reactions, funny mistakes, unexpected moments.</p><span class="q" data-aud="owner">Does personality create stronger recall?</span></div>
+      <div class="card"><h3>Squad stories</h3><p>Teammate banter, teamwork, chaotic moments.</p><span class="q" data-aud="owner">Does a story keep people watching?</span></div>
+      <div class="card"><h3>Challenges</h3><p>Self-imposed rules, unusual strategies, mini-goals.</p><span class="q" data-aud="owner">Does a repeatable series create return viewers?</span></div>
     </div>
   </section>
 
   <section class="block" id="homeBoard">
-    <div class="head row" style="justify-content:space-between"><div class="head"><span class="eyebrow">Current standings</span><h2>Top of the board</h2></div><a class="btn sm" href="#leaderboard">Full leaderboard</a></div>
+    <div class="head row" style="justify-content:space-between"><div class="head"><span class="eyebrow">Current standings</span><h2>Top of the board</h2></div><div class="row"><a class="btn sm" href="#admin" data-goto="clips" data-aud="owner">Score clips</a><a class="btn sm" href="#leaderboard">Full leaderboard</a></div></div>
     <div id="homeBoardBody"></div>
   </section>
 </div>
 
 <!-- RULES -->
 <div class="view" id="v-rules" hidden>
+  <div class="banner" data-aud="owner"><span class="chip">Public page</span><span>This is what clippers read. Season name, prizes, platforms and weekly limit come from Settings.</span><a class="btn sm" href="#admin" data-goto="settings">Edit settings</a></div>
   <section class="block">
     <div class="head"><span class="eyebrow" data-bind="seasonLong">SHAHZON CLIP LEAGUE · Season 01</span><h2>Official rules</h2>
     <p class="lead">Pilot duration: 30 days. Rules for a running season are not changed retroactively; future seasons may be revised.</p></div>
@@ -167,6 +196,7 @@
 
 <!-- GUIDE -->
 <div class="view" id="v-guide" hidden>
+  <div class="banner" data-aud="owner"><span class="chip">Public page</span><span>The guide clippers follow. Channel and community buttons come from Settings.</span><a class="btn sm" href="#admin" data-goto="settings">Edit links</a></div>
   <section class="block">
     <div class="head"><span class="eyebrow">Clipper guide</span><h2>Anatomy of a winning clip</h2><p class="lead">Start at the most interesting moment. Keep only the context needed. End with a natural pointer to the channel.</p></div>
     <div class="strip" aria-label="Clip structure">
@@ -200,6 +230,7 @@
 
 <!-- LEADERBOARD -->
 <div class="view" id="v-leaderboard" hidden>
+  <div class="banner" data-aud="owner"><span class="chip">Public page</span><span>Standings update from the scores you save. Change the results status in the control room overview.</span><a class="btn sm" href="#admin" data-goto="clips">Score clips</a></div>
   <section class="block">
     <div class="head"><span class="eyebrow" data-bind="seasonLong">SHAHZON CLIP LEAGUE · Season 01</span><h2>Leaderboard</h2></div>
     <div class="banner" id="resultsBanner"></div>
@@ -214,8 +245,9 @@
 <!-- SUBMIT -->
 <div class="view" id="v-submit" hidden>
   <section class="block">
-    <div class="head"><span class="eyebrow">Join &amp; submit</span><h2>Get in the league</h2>
-      <p class="lead">Apply once to get your Clipper ID. Then submit each published clip with its source stream timestamp. An entry is received when you submit, and confirmed eligible after review.</p></div>
+    <div class="head"><span class="eyebrow"><span data-aud="public">Join &amp; submit</span><span data-aud="owner">Entries</span></span><h2><span data-aud="public">Get in the league</span><span data-aud="owner">Entry intake</span></h2>
+      <p class="lead" data-aud="public">Apply once to get your Clipper ID. Then submit each published clip with its source stream timestamp. An entry is received when you submit, and confirmed eligible after review.</p>
+      <p class="lead" data-aud="owner">Clippers apply and submit from this page. New entries land in your Inbox for review.</p></div>
     <div id="submitBody"></div>
   </section>
 </div>
@@ -223,14 +255,14 @@
 <!-- ADMIN -->
 <div class="view" id="v-admin" hidden>
   <section class="block">
-    <div class="row" style="justify-content:space-between;align-items:end"><div class="head"><span class="eyebrow">Organiser only</span><h2>League control room</h2></div><button class="btn sm ghost" type="button" id="logoutBtn">Sign out</button></div>
+    <div class="row" style="justify-content:space-between;align-items:end"><div class="head"><span class="eyebrow">Organiser only</span><h2>League control room</h2></div><div class="row"><button class="btn sm ghost" type="button" data-preview>Visitor view</button><button class="btn sm ghost" type="button" id="logoutBtn">Sign out</button></div></div>
     <div class="subnav" id="adminNav"></div>
     <div id="adminBody"></div>
   </section>
 </div>
 <!-- LOGIN -->
 <div class="view" id="v-login" hidden>
-  <section class="block" style="max-width:460px">
+  <section class="block" style="max-width:460px;width:100%">
     <form class="panel" id="loginForm" novalidate>
       <span class="eyebrow">Organiser only</span>
       <h2>Sign in</h2>
@@ -242,10 +274,16 @@
 </div>
 </main>
 
-<footer><div class="in"><span><b>SHAHZON</b> · Clip Army &amp; Creator Growth System</span><span>Free to enter. Not sponsored by YouTube or Instagram. Never share passwords or OTPs.</span><a href="#login" class="muted">Organiser</a></div></footer>
+<footer><div class="in">
+  <span data-aud="public"><b>SHAHZON</b> Clip League</span>
+  <span data-aud="owner"><b>SHAHZON</b> · Clip Army &amp; Creator Growth System · Signed in as organiser</span>
+  <span>Free to enter. Not sponsored by YouTube or Instagram. Never share passwords or OTPs.</span>
+  <a href="#login" class="muted" data-aud="public">Organiser</a>
+  <a href="#admin" class="muted" data-aud="owner">Control room</a>
+</div></footer>
 <div class="toast" id="toast" hidden></div>
 
 <script src="config.js?v=1"></script>
-<script src="assets/app.js?v=1"></script>
+<script src="assets/app.js?v=2"></script>
 </body>
 </html>
